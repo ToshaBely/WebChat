@@ -5,11 +5,13 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
+import Chat.Util.XMLHistoryUtil;
 import Chat.Model.Message;
 import Chat.Model.MessageStorage;
 import Chat.Util.ServletUtil;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
+import org.xml.sax.SAXException;
 
 import static Chat.Util.MessageUtil.TOKEN;
 import static Chat.Util.MessageUtil.MESSAGES;
@@ -23,8 +25,9 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.TimeZone;
 
 
@@ -35,9 +38,32 @@ public class MainServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-        addStubData();
+        //addStubData();
+        try {
+            loadHistory();
+        } catch (SAXException e) {
+            //logger.error(e);
+            System.out.println(e.toString());
+        }
+        catch (IOException e) {
+            System.out.println(e.toString());
+        }
+        catch (ParserConfigurationException e) {
+            System.out.println(e.toString());
+        }
+        catch (TransformerException e) {
+            System.out.println(e.toString());
+        }
     }
 
+    private void loadHistory() throws SAXException, IOException, ParserConfigurationException, TransformerException {
+        if (XMLHistoryUtil.doesStorageExist()) {
+            MessageStorage.addAll(XMLHistoryUtil.getMessages());
+        } else {
+            XMLHistoryUtil.createStorage();
+            addStubData();
+     	}
+    }
 
     private void addStubData() {
         Message[] stubMessage = {
@@ -46,6 +72,23 @@ public class MainServlet extends HttpServlet {
                 new Message("3", "Learn Java Servlet Technology", "Anton"),
                 new Message("4", "Write The Chat !", "Anton"), };
         MessageStorage.addAll(stubMessage);
+        for (Message message : stubMessage) {
+            try {
+                XMLHistoryUtil.addData(message, "now");
+            } catch (ParserConfigurationException e) {
+                System.out.println(e.toString());
+            }
+            catch (SAXException e) {
+                System.out.println(e.toString());
+            }
+            catch (IOException e) {
+                System.out.println(e.toString());
+            }
+            catch (TransformerException e) {
+                System.out.println(e.toString());
+            }
+
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -97,12 +140,23 @@ public class MainServlet extends HttpServlet {
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
             MessageStorage.addMessage(message);
+            XMLHistoryUtil.addData(message, date);
             response.setStatus(HttpServletResponse.SC_OK);
             System.out.print(date + "  ");
             System.out.println(json.get("author") + " : " + json.get("text"));
             System.out.flush();
+
         } catch (ParseException e) {
             //logger.error(e);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        }
+        catch (ParserConfigurationException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        }
+        catch (SAXException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        }
+        catch (TransformerException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }

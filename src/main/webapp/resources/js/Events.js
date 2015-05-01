@@ -26,7 +26,7 @@ function uniqueID() {
 }
 
 var appState = {
-    mainUrl : 'http://localhost:8080/WebChat',
+    mainUrl : 'http://localhost:8080/WebChat/',
     token : 'TE11EN'
 };
 

@@ -20,8 +20,12 @@ public class MessageStorage {
         INSTANSE.add(message);
     }
 
-    public static void addAll(Message[] tasks) {
-        INSTANSE.addAll(Arrays.asList(tasks));
+    public static void addAll(Message[] messages) {
+        INSTANSE.addAll(Arrays.asList(messages));
+    }
+
+    public static void addAll(List<Message> messages) {
+        		INSTANSE.addAll(messages);
     }
 
     public static int getSize() {
