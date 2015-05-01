@@ -1,0 +1,95 @@
+textarea {
+    resize: none;
+    overflow: auto;
+}
+
+#toolBar {
+    top: 2%;
+    position: absolute;
+    width: 80%;
+    left: 10%;
+    height: 6%;
+}
+
+#serverStatus {
+    position: relative;
+    left: 1.5%;
+    color: green;
+    height: 2em;
+}
+
+#name {
+    position: absolute;
+    height: 2em;
+    width: 20%;
+    left: 40%;
+}
+
+#inputName {
+    position: absolute;
+    width: 20%;
+    right: 13%;
+}
+
+#btnName {
+    position: absolute;
+    width: 10%;
+    height: 2em;
+    right: 2%;
+}
+
+#history {
+    top: 10%;
+    width: 80%;
+    height: 75%;
+    left: 10%;
+    overflow: auto;
+    position: absolute;
+    border: #808080 1px solid;
+}
+
+.author {
+
+}
+
+.deleteMessage {
+    margin: 1px;
+}
+
+.changeMessage {
+    margin: 1px;
+}
+
+.textMessage {
+}
+
+.setInvisible {
+    visibility: hidden;
+}
+
+#inputArea {
+    width: 85%;
+    left: 10%;
+    position: absolute;
+    bottom: 3%;
+}
+
+#inputText {
+    position: relative;
+    left: 1.5%;
+    width: 80%;
+}
+
+#btnSend {
+    position: relative;
+    width: 6%;
+    height: 2%;
+    left: 2%;
+}
+
+#btnChangeMessage {
+    width: 6%;
+    height: 2%;
+    left: 2%;
+    position: relative;
+}
