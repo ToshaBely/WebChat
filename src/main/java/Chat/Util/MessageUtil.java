@@ -7,6 +7,7 @@ import org.json.simple.parser.ParseException;
 
 public class MessageUtil {
     public static final String TOKEN = "token";
+    public static final String VERSION = "version";
     public static final String MESSAGES = "messages";
     private static final String AUTHOR = "author";
     private static final String TEXT = "text";
@@ -37,7 +38,7 @@ public class MessageUtil {
         Object text = json.get(TEXT);
 
         if (id != null && author != null && text != null) {
-            return new Message((String) id, (String) text, (String) author);
+            return new Message((String) id, (String) text, (String) author, "-1");
         }
         return null;
     }

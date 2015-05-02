@@ -57,7 +57,7 @@ public final class XMLHistoryUtil {
         transformer.transform(source, result);
     }
 
-    public static synchronized void addData(Message message, String dateMessage) throws ParserConfigurationException, SAXException, IOException, TransformerException {
+    public static synchronized void addData(Message message) throws ParserConfigurationException, SAXException, IOException, TransformerException {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
         Document document = documentBuilder.parse(STORAGE_LOCATION);
@@ -79,7 +79,7 @@ public final class XMLHistoryUtil {
         taskElement.appendChild(text);
 
         Element date = document.createElement(DATE);
-        date.appendChild(document.createTextNode(dateMessage));
+        date.appendChild(document.createTextNode(message.getDate()));
         taskElement.appendChild(date);
 
         DOMSource source = new DOMSource(document);
@@ -90,7 +90,7 @@ public final class XMLHistoryUtil {
         transformer.transform(source, result);
     }
 
-    public static synchronized void updateData(Message message, String date) throws ParserConfigurationException, SAXException, IOException, TransformerException, XPathExpressionException {
+    public static synchronized void updateData(Message message) throws ParserConfigurationException, SAXException, IOException, TransformerException, XPathExpressionException {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
         Document document = documentBuilder.parse(STORAGE_LOCATION);
@@ -113,7 +113,7 @@ public final class XMLHistoryUtil {
                 }
 
                 if(DATE.equals(node.getNodeName())) {
-                    node.setTextContent(date);
+                    node.setTextContent(message.getDate());
                 }
 
             }
@@ -147,7 +147,7 @@ public final class XMLHistoryUtil {
             String text = taskElement.getElementsByTagName(TEXT).item(0).getTextContent();
             String author = taskElement.getElementsByTagName(AUTHOR).item(0).getTextContent();
             String date = taskElement.getElementsByTagName(DATE).item(0).getTextContent();
-            tasks.add(new Message(id, text, author));
+            tasks.add(new Message(id, text, author, date));
         }
         return tasks;
     }

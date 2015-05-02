@@ -26,7 +26,7 @@ function uniqueID() {
 }
 
 var appState = {
-    mainUrl : 'http://localhost:8080/WebChat/',
+    mainUrl : 'http://localhost:8080/WebChat',
     token : 'TE11EN'
 };
 
@@ -184,7 +184,7 @@ function hideButtons (msg) {
 function restore(continueWith) {
     var url = appState.mainUrl + '?token=' + appState.token + '&version=' + version;
 
-    doGet(url, function(responseText) {
+    doGet(url, function (responseText) {
         console.assert(responseText != null);
 
         var response = JSON.parse(responseText);
@@ -195,8 +195,7 @@ function restore(continueWith) {
         writeAll(response.messages);
         appState.token = response.token;
         continueWith && continueWith();
-
-    });
+        });
     setTimeout(function() {
         restore(continueWith);
     }, 1000);

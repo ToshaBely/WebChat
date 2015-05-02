@@ -1,6 +1,7 @@
 package Chat.Controller;
 
 import java.io.BufferedWriter;
+import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.util.Date;
 import java.text.SimpleDateFormat;
@@ -14,6 +15,7 @@ import org.json.simple.parser.ParseException;
 import org.xml.sax.SAXException;
 
 import static Chat.Util.MessageUtil.TOKEN;
+import static Chat.Util.MessageUtil.VERSION;
 import static Chat.Util.MessageUtil.MESSAGES;
 import static Chat.Util.MessageUtil.getIndex;
 import static Chat.Util.MessageUtil.getToken;
@@ -28,19 +30,24 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.IOException;
+import java.util.List;
 import java.util.TimeZone;
 
 
 @WebServlet("/WebChat")
 public class MainServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
-    //private static Logger logger = Logger.getLogger(TaskServlet.class.getName());
+    
+    private Integer versionServer;
 
     @Override
     public void init() throws ServletException {
-        //addStubData();
         try {
+            versionServer = 0;
             loadHistory();
+            List<Message> messageList = XMLHistoryUtil.getMessages();
+            for (Message message: messageList) {
+                System.out.println(message.getDate() + " " + message.getAuthor() + ": " + message.getText());
+            }
         } catch (SAXException e) {
             //logger.error(e);
             System.out.println(e.toString());
@@ -67,14 +74,14 @@ public class MainServlet extends HttpServlet {
 
     private void addStubData() {
         Message[] stubMessage = {
-                new Message("1", "Create markup", "Anton"),
-                new Message("2", "Learn JavaScript", "Anton"),
-                new Message("3", "Learn Java Servlet Technology", "Anton"),
-                new Message("4", "Write The Chat !", "Anton"), };
+                new Message("1", "Create markup", "Anton", "now"),
+                new Message("2", "Learn JavaScript", "Anton", "now"),
+                new Message("3", "Learn Java Servlet Technology", "Anton", "now"),
+                new Message("4", "Write The Chat !", "Anton", "now"), };
         MessageStorage.addAll(stubMessage);
         for (Message message : stubMessage) {
             try {
-                XMLHistoryUtil.addData(message, "now");
+                XMLHistoryUtil.addData(message);
             } catch (ParserConfigurationException e) {
                 System.out.println(e.toString());
             }
@@ -97,6 +104,7 @@ public class MainServlet extends HttpServlet {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put(MESSAGES, MessageStorage.getSubMessageByIndex(index));
         jsonObject.put(TOKEN, getToken(MessageStorage.getSize()));
+        jsonObject.put(VERSION, versionServer.toString());
         return jsonObject.toJSONString();
     }
 
@@ -106,48 +114,46 @@ public class MainServlet extends HttpServlet {
         formatter.setTimeZone(TimeZone.getTimeZone("Europe/Minsk"));
         return formatter.format(new Date());
     }
-/*
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        //logger.info("doGet");
         String token = request.getParameter(TOKEN);
-        //logger.info("Token " + token);
+        int version = Integer.parseInt(request.getParameter(VERSION));
 
         if (token != null && !"".equals(token)) {
             int index = getIndex(token);
             response.setContentType(ServletUtil.APPLICATION_JSON);
-            //logger.info("Index " + index);
-            String messages = formResponse(index);
-            response.setContentType(ServletUtil.APPLICATION_JSON);
             PrintWriter out = response.getWriter();
-
+            String messages;
+            if (versionServer.equals(version)) {
+                messages = formResponse(index);
+            } else {
+                messages = formResponse(0);
+            }
             out.print(messages);
             out.flush();
         } else {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "'token' parameter needed");
         }
     }
-    */
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        //logger.info("doPost");
         String data = ServletUtil.getMessageBody(request);
-        //logger.info(data);
         try {
             String date = getDate();
 
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
+            message.setDate(date);
             MessageStorage.addMessage(message);
-            XMLHistoryUtil.addData(message, date);
+            XMLHistoryUtil.addData(message);
             response.setStatus(HttpServletResponse.SC_OK);
             System.out.print(date + "  ");
             System.out.println(json.get("author") + " : " + json.get("text"));
             System.out.flush();
 
         } catch (ParseException e) {
-            //logger.error(e);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
         catch (ParserConfigurationException e) {
@@ -183,62 +189,5 @@ public class MainServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
-
-    @SuppressWarnings("unchecked")
-    private String formResponse(int index) {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put(TASKS, TaskStorage.getSubTasksByIndex(index));
-        jsonObject.put(TOKEN, getToken(TaskStorage.getSize()));
-        return jsonObject.toJSONString();
-    }
-
-    private void addStubData() {
-        Task[] stubTasks = {
-                new Task("1", "Create markup", true),
-                new Task("2", "Learn JavaScript", true),
-                new Task("3", "Learn Java Servlet Technology", false),
-                new Task("4", "Write The Chat !", false), };
-        TaskStorage.addAll(stubTasks);
-    }
 */
-
-/*
-    //private MessageExchange messageExchange = new MessageExchange();
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
-        PrintWriter pw = response.getWriter();
-        pw.println("method GET");
-/*
-        //logger.info("doGet");
-        String token = request.getParameter("token");
-        //logger.info("Token " + token);
-
-        if (token != null && !"".equals(token)) {
-            int index = messageExchange.getIndex(token);
-            //logger.info("Index " + index);
-            //String tasks = messageExchange.formResponse(index);
-            //response.setContentType(ServletUtil.APPLICATION_JSON);
-            PrintWriter out = response.getWriter();
-            out.print(index);
-            out.flush();
-        } else {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "'token' parameter needed");
-        }*/
-       /* String token = request.getParameter("TOKEN");
-
-        if (token != null && !"".equals(token)) {
-            int index = messageExchange.getIndex(token);
-            String messages = messageExchange.getServerResponse(index);
-            response.setContentType("ServletUtil.APPLICATION_JSON");
-            PrintWriter out = response.getWriter();
-            out.print(messages);
-            out.flush();
-        } else {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "'token' parameter needed");
-        }*/
-       //PrintWriter pw = response.getWriter();
-       //pw.println("method GET");
-    //}
 }
