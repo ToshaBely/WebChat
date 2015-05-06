@@ -90,6 +90,39 @@ public final class XMLHistoryUtil {
         transformer.transform(source, result);
     }
 
+    public static synchronized void deleteData (Message message) throws ParserConfigurationException, SAXException, IOException, TransformerException, XPathExpressionException {
+        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+        Document document = documentBuilder.parse(STORAGE_LOCATION);
+        document.getDocumentElement().normalize();
+        Node messageToDelete = getNodeById(document, message.getId());
+
+        if (messageToDelete != null) {
+            NodeList childNodes = messageToDelete.getChildNodes();
+
+            for (int i = 0; i < childNodes.getLength(); i++) {
+
+                Node node = childNodes.item(i);
+
+                if (TEXT.equals(node.getNodeName())) {
+                    node.setTextContent(message.getText());
+                }
+
+                if(DATE.equals(node.getNodeName())) {
+                    node.setTextContent(message.getDate());
+                }
+
+            }
+            Transformer transformer = getTransformer();
+
+            DOMSource source = new DOMSource(document);
+            StreamResult result = new StreamResult(new File(STORAGE_LOCATION));
+            transformer.transform(source, result);
+        } else {
+            throw new NullPointerException();
+        }
+    }
+
     public static synchronized void updateData(Message message) throws ParserConfigurationException, SAXException, IOException, TransformerException, XPathExpressionException {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -133,23 +166,33 @@ public final class XMLHistoryUtil {
         return file.exists();
     }
 
-    public static synchronized List<Message> getMessages() throws SAXException, IOException, ParserConfigurationException {
-        List<Message> tasks = new ArrayList<Message>();
+    public static synchronized List<Message> getMessages(int index) throws SAXException, IOException, ParserConfigurationException {
+        List<Message> messages = new ArrayList<Message>();
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
         Document document = documentBuilder.parse(STORAGE_LOCATION);
         document.getDocumentElement().normalize();
         Element root = document.getDocumentElement(); // Root <messages> element
-        NodeList taskList = root.getElementsByTagName(MESSAGE);
-        for (int i = 0; i < taskList.getLength(); i++) {
-            Element taskElement = (Element) taskList.item(i);
-            String id = taskElement.getAttribute(ID);
-            String text = taskElement.getElementsByTagName(TEXT).item(0).getTextContent();
-            String author = taskElement.getElementsByTagName(AUTHOR).item(0).getTextContent();
-            String date = taskElement.getElementsByTagName(DATE).item(0).getTextContent();
-            tasks.add(new Message(id, text, author, date));
+        NodeList messageList = root.getElementsByTagName(MESSAGE);
+        for (int i = index; i < messageList.getLength(); i++) {
+            Element messageElement = (Element) messageList.item(i);
+            String id = messageElement.getAttribute(ID);
+            String text = messageElement.getElementsByTagName(TEXT).item(0).getTextContent();
+            String author = messageElement.getElementsByTagName(AUTHOR).item(0).getTextContent();
+            String date = messageElement.getElementsByTagName(DATE).item(0).getTextContent();
+            messages.add(new Message(id, text, author, date));
         }
-        return tasks;
+        return messages;
+    }
+
+    public static int getCount() throws ParserConfigurationException, SAXException, IOException{
+        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+        Document document = documentBuilder.parse(STORAGE_LOCATION);
+        document.getDocumentElement().normalize();
+        Element root = document.getDocumentElement(); // Root <messages> element
+        NodeList messageList = root.getElementsByTagName(MESSAGE);
+        return messageList.getLength();
     }
 
     public static synchronized int getStorageSize() throws SAXException, IOException, ParserConfigurationException {

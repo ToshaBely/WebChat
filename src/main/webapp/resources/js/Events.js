@@ -31,7 +31,7 @@ var appState = {
 };
 
 function run() {
-    restore();
+    restore(writeAll);
 
     var name = document.getElementById("btnName");
     name.addEventListener("click", function () {
@@ -114,10 +114,7 @@ function writeUIMessage(elem) {
 
 function funBtnDelete(elem) {
     var parent = elem.parentNode;
-    document.getElementById(parent.id).parentNode.removeChild(document.getElementById(parent.id));
-    var idJSON = createIdJSON(parent.id);
-    doDelete(appState.mainUrl, JSON.stringify(idJSON), null, null);
-    //version = 0;
+    doDelete(appState.mainUrl, JSON.stringify({id: parent.id, text: "", author: "not important"}), null, null);
 }
 
 function funBtnChange(elem) {
@@ -138,35 +135,19 @@ function funBtnChange(elem) {
 function changeMessage() {
     var text = document.getElementById("inputText");
 
-    doPut(appState.mainUrl,JSON.stringify({id: nowID, message: text.value}), null, null);
-
     while (!text.value) {
         alert ("Enter some text!");
         return;
     }
 
-    var item = document.getElementById(nowID);
-    var i = 1;
-    var mes = item.firstChild;
-    while (mes.nodeName == "#text" || !mes.classList.contains("textMessage")) {
-        mes = item.childNodes[i++];
-    }
+    doPut(appState.mainUrl,JSON.stringify({id: nowID, text: text.value, author: document.getElementById("name").value}), null, null);
 
-    mes.innerHTML = text.value;
     var btn = document.getElementById("btnChangeMessage");
     btn.classList.add("setInvisible");
     var send = document.getElementById("btnSend");
     send.classList.remove("setInvisible");
 
-    /*for (var i = 0; i < messageList.length; i++) {
-        if (messageList[i].id == nowID) {
-            messageList[i].message = text.value;
-            break;
-        }
-    }*/
     text.value = '';
-
-    document.getElementById("history").scrollTop = 99999999;
 }
 
 function showButtons (msg) {
@@ -192,9 +173,8 @@ function restore(continueWith) {
             document.getElementById('history').innerHTML = '';
             version = response.version;
         }
-        writeAll(response.messages);
         appState.token = response.token;
-        continueWith && continueWith();
+        continueWith && continueWith(response.messages);
         });
     setTimeout(function() {
         restore(continueWith);
@@ -202,13 +182,19 @@ function restore(continueWith) {
 }
 
 function writeAll(messageList) {
+    var flag = false;
     if (messageList != null) {
+        if (messageList.length != 0) {
+            flag = true;
+        }
         for (var i = 0; i < messageList.length; i++) {
-            if (messageList[i].message != '') {
+            if (messageList[i].text != '') {
                 document.getElementById("history").appendChild(writeUIMessage(messageList[i]));
             }
         }
-        document.getElementById("history").scrollTop = 99999999;
+        if (flag) {
+            document.getElementById("history").scrollTop = 99999999;
+        }
     }
 }
 
@@ -216,7 +202,7 @@ function writeAll(messageList) {
 
 function defaultErrorHandler(message) {
     console.error(message);
-    output(message);
+    //output(message);
 }
 
 function doGet(url, continueWith, continueWithError) {
@@ -238,9 +224,10 @@ function doDelete(url, data, continueWith, continueWithError) {
 function isError(text) {
     if(text == "")
         return false;
+    var obj;
 
     try {
-        var obj = JSON.parse(text);
+        obj = JSON.parse(text);
     } catch(ex) {
         return true;
     }
@@ -289,5 +276,5 @@ function ajax(method, url, data, continueWith, continueWithError) {
 }
 
 window.onerror = function(err) {
-    output(err.toString());
+    //output(err.toString());
 }

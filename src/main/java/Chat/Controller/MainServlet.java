@@ -8,7 +8,7 @@ import java.text.SimpleDateFormat;
 
 import Chat.Util.XMLHistoryUtil;
 import Chat.Model.Message;
-import Chat.Model.MessageStorage;
+//import Chat.Model.MessageStorage;
 import Chat.Util.ServletUtil;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.util.List;
 import java.util.TimeZone;
@@ -36,7 +37,7 @@ import java.util.TimeZone;
 
 @WebServlet("/WebChat")
 public class MainServlet extends HttpServlet {
-    
+
     private Integer versionServer;
 
     @Override
@@ -44,66 +45,33 @@ public class MainServlet extends HttpServlet {
         try {
             versionServer = 0;
             loadHistory();
-            List<Message> messageList = XMLHistoryUtil.getMessages();
-            for (Message message: messageList) {
+            List<Message> messageList = XMLHistoryUtil.getMessages(0);
+            for (Message message : messageList) {
                 System.out.println(message.getDate() + " " + message.getAuthor() + ": " + message.getText());
             }
         } catch (SAXException e) {
-            //logger.error(e);
             System.out.println(e.toString());
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.out.println(e.toString());
-        }
-        catch (ParserConfigurationException e) {
+        } catch (ParserConfigurationException e) {
             System.out.println(e.toString());
-        }
-        catch (TransformerException e) {
+        } catch (TransformerException e) {
             System.out.println(e.toString());
         }
     }
 
     private void loadHistory() throws SAXException, IOException, ParserConfigurationException, TransformerException {
-        if (XMLHistoryUtil.doesStorageExist()) {
-            MessageStorage.addAll(XMLHistoryUtil.getMessages());
-        } else {
+        if (!XMLHistoryUtil.doesStorageExist()) {
             XMLHistoryUtil.createStorage();
-            addStubData();
-     	}
-    }
-
-    private void addStubData() {
-        Message[] stubMessage = {
-                new Message("1", "Create markup", "Anton", "now"),
-                new Message("2", "Learn JavaScript", "Anton", "now"),
-                new Message("3", "Learn Java Servlet Technology", "Anton", "now"),
-                new Message("4", "Write The Chat !", "Anton", "now"), };
-        MessageStorage.addAll(stubMessage);
-        for (Message message : stubMessage) {
-            try {
-                XMLHistoryUtil.addData(message);
-            } catch (ParserConfigurationException e) {
-                System.out.println(e.toString());
-            }
-            catch (SAXException e) {
-                System.out.println(e.toString());
-            }
-            catch (IOException e) {
-                System.out.println(e.toString());
-            }
-            catch (TransformerException e) {
-                System.out.println(e.toString());
-            }
-
         }
     }
 
     @SuppressWarnings("unchecked")
-    private String formResponse(int index) {
+    private String formResponse(int index) throws SAXException, IOException, ParserConfigurationException {
 
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put(MESSAGES, MessageStorage.getSubMessageByIndex(index));
-        jsonObject.put(TOKEN, getToken(MessageStorage.getSize()));
+        jsonObject.put(MESSAGES, XMLHistoryUtil.getMessages(index));
+        jsonObject.put(TOKEN, getToken(XMLHistoryUtil.getCount()));
         jsonObject.put(VERSION, versionServer.toString());
         return jsonObject.toJSONString();
     }
@@ -118,22 +86,30 @@ public class MainServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String token = request.getParameter(TOKEN);
-        int version = Integer.parseInt(request.getParameter(VERSION));
+        Integer version = Integer.parseInt(request.getParameter(VERSION));
 
-        if (token != null && !"".equals(token)) {
-            int index = getIndex(token);
-            response.setContentType(ServletUtil.APPLICATION_JSON);
-            PrintWriter out = response.getWriter();
-            String messages;
-            if (versionServer.equals(version)) {
-                messages = formResponse(index);
+        try {
+            if (token != null && !"".equals(token) && !"".equals(version.toString())) {
+                int index = getIndex(token);
+                response.setContentType(ServletUtil.APPLICATION_JSON);
+                PrintWriter out = response.getWriter();
+                String messages;
+                if (versionServer.equals(version)) {
+                    messages = formResponse(index);
+                } else {
+                    messages = formResponse(0);
+                }
+                out.print(messages);
+                out.flush();
             } else {
-                messages = formResponse(0);
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "'token' and 'version' parameters needed");
             }
-            out.print(messages);
-            out.flush();
-        } else {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "'token' parameter needed");
+        }
+        catch (SAXException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        }
+        catch (ParserConfigurationException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
@@ -146,7 +122,6 @@ public class MainServlet extends HttpServlet {
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
             message.setDate(date);
-            MessageStorage.addMessage(message);
             XMLHistoryUtil.addData(message);
             response.setStatus(HttpServletResponse.SC_OK);
             System.out.print(date + "  ");
@@ -155,39 +130,58 @@ public class MainServlet extends HttpServlet {
 
         } catch (ParseException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-        }
-        catch (ParserConfigurationException e) {
+        } catch (ParserConfigurationException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-        }
-        catch (SAXException e) {
+        } catch (SAXException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-        }
-        catch (TransformerException e) {
+        } catch (TransformerException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
-/*
+
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        logger.info("doPut");
+        versionServer++;
         String data = ServletUtil.getMessageBody(request);
-        logger.info(data);
         try {
             JSONObject json = stringToJson(data);
-            Task task = jsonToTask(json);
-            String id = task.getId();
-            Task taskToUpdate = TaskStorage.getTaskById(id);
-            if (taskToUpdate != null) {
-                taskToUpdate.setDescription(task.getDescription());
-                taskToUpdate.setDone(task.isDone());
+            Message message = jsonToMessage(json);
+            message.setDate(getDate());
+                XMLHistoryUtil.updateData(message);
                 response.setStatus(HttpServletResponse.SC_OK);
-            } else {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Task does not exist");
-            }
         } catch (ParseException e) {
-            logger.error(e);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (ParserConfigurationException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (SAXException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (TransformerException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (XPathExpressionException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
-*/
+
+    @Override
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        versionServer++;
+        String data = ServletUtil.getMessageBody(request);
+        try {
+            JSONObject json = stringToJson(data);
+            Message message = jsonToMessage(json);
+            message.setDate(getDate());
+            XMLHistoryUtil.deleteData(message);
+            response.setStatus(HttpServletResponse.SC_OK);
+        } catch (ParseException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (ParserConfigurationException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (SAXException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (TransformerException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (XPathExpressionException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        }
+    }
 }
