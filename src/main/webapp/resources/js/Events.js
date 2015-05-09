@@ -2,7 +2,6 @@
 
 //var messageList = [];
 var nowID;
-var version = 0;
 
 function createMes(textNew, authorNew) {
     return {
@@ -27,7 +26,8 @@ function uniqueID() {
 
 var appState = {
     mainUrl : 'http://localhost:8080/WebChat',
-    token : 'TE11EN'
+    token : 'TE11EN',
+    version: 0
 };
 
 function run() {
@@ -163,15 +163,15 @@ function hideButtons (msg) {
 }
 
 function restore(continueWith) {
-    var url = appState.mainUrl + '?token=' + appState.token + '&version=' + version;
+    var url = appState.mainUrl + '?token=' + appState.token + '&version=' + appState.version;
 
     doGet(url, function (responseText) {
         console.assert(responseText != null);
 
         var response = JSON.parse(responseText);
-        if (version != response.version) {
+        if (appState.version != response.version) {
             document.getElementById('history').innerHTML = '';
-            version = response.version;
+            appState.version = response.version;
         }
         appState.token = response.token;
         continueWith && continueWith(response.messages);
@@ -260,7 +260,7 @@ function ajax(method, url, data, continueWith, continueWithError) {
 
     xhr.ontimeout = function () {
         ontinueWithError('Server timed out !');
-    }
+    };
 
     xhr.onerror = function (e) {
         var errMsg = 'Server connection error !\n'+

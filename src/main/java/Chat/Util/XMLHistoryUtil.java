@@ -185,16 +185,6 @@ public final class XMLHistoryUtil {
         return messages;
     }
 
-    public static int getCount() throws ParserConfigurationException, SAXException, IOException{
-        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-        Document document = documentBuilder.parse(STORAGE_LOCATION);
-        document.getDocumentElement().normalize();
-        Element root = document.getDocumentElement(); // Root <messages> element
-        NodeList messageList = root.getElementsByTagName(MESSAGE);
-        return messageList.getLength();
-    }
-
     public static synchronized int getStorageSize() throws SAXException, IOException, ParserConfigurationException {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
