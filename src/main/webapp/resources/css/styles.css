@@ -11,7 +11,14 @@ textarea {
     height: 6%;
 }
 
-#serverStatus {
+.serverBadStatus {
+    position: relative;
+    left: 1.5%;
+    color: red;
+    height: 2em;
+}
+
+.serverGoodStatus {
     position: relative;
     left: 1.5%;
     color: green;

@@ -1,6 +1,5 @@
 'use strict';
 
-//var messageList = [];
 var nowID;
 
 function createMes(textNew, authorNew) {
@@ -9,12 +8,6 @@ function createMes(textNew, authorNew) {
         author: authorNew,
         id: uniqueID()
     };
-}
-
-function createIdJSON(id_) {
-    return {
-        id: id_
-    }
 }
 
 function uniqueID() {
@@ -27,7 +20,7 @@ function uniqueID() {
 var appState = {
     mainUrl : 'http://localhost:8080/WebChat',
     token : 'TE11EN',
-    version: 0
+    version: "0"
 };
 
 function run() {
@@ -54,7 +47,11 @@ function run() {
 
         var item = createMes(document.getElementById("inputText").value, document.getElementById("name").value);
         document.getElementById("inputText").value = '';
-        doPost (appState.mainUrl, JSON.stringify(item), null, null);
+        $.ajax({
+            method: "POST",
+            url: appState.mainUrl,
+            data: JSON.stringify(item)
+        });
         document.getElementById("history").scrollTop = 99999999;
     });
 
@@ -114,7 +111,11 @@ function writeUIMessage(elem) {
 
 function funBtnDelete(elem) {
     var parent = elem.parentNode;
-    doDelete(appState.mainUrl, JSON.stringify({id: parent.id, text: "", author: "not important"}), null, null);
+    $.ajax({
+       method: "DELETE",
+        url: appState.mainUrl,
+        data: JSON.stringify({id: parent.id, text: "", author: "not important"})
+    });
 }
 
 function funBtnChange(elem) {
@@ -140,7 +141,11 @@ function changeMessage() {
         return;
     }
 
-    doPut(appState.mainUrl,JSON.stringify({id: nowID, text: text.value, author: document.getElementById("name").value}), null, null);
+    $.ajax({
+        method: "PUT",
+        url: appState.mainUrl,
+        data: JSON.stringify({id: nowID, text: text.value, author: document.getElementById("name").value})
+    });
 
     var btn = document.getElementById("btnChangeMessage");
     btn.classList.add("setInvisible");
@@ -162,21 +167,43 @@ function hideButtons (msg) {
     msg.getElementsByClassName("changeMessage")[0].classList.add("setInvisible");
 }
 
+function setServerStatusBad () {
+    if ($("#serverStatus").hasClass("serverGoodStatus")) {
+        $("#serverStatus").removeClass("serverGoodStatus").addClass("serverBadStatus").html("Server is not available!");
+    }
+}
+
+function setServerStatusGood() {
+    if ($("#serverStatus").hasClass("serverBadStatus")) {
+        $("#serverStatus").removeClass("serverBadStatus").addClass("serverGoodStatus").html("Server is available!");
+    }
+}
+
 function restore(continueWith) {
     var url = appState.mainUrl + '?token=' + appState.token + '&version=' + appState.version;
 
-    doGet(url, function (responseText) {
-        console.assert(responseText != null);
+    $.get(url, function(data, textStatus, xhr) {
 
-        var response = JSON.parse(responseText);
-        if (appState.version != response.version) {
-            document.getElementById('history').innerHTML = '';
-            appState.version = response.version;
+        if(xhr.status != 200) {
+            if (xhr.status != 304) {
+                continueWithError('Error on the server side, response ' + xhr.status);
+                setServerStatusBad();
+                return;
+            } else {
+                setServerStatusGood();
+            }
+        } else {
+            setServerStatusGood();
+            if (appState.version != data.version) {
+                document.getElementById('history').innerHTML = '';
+                appState.version = data.version;
+            }
+            appState.token = data.token;
         }
-        appState.token = response.token;
-        continueWith && continueWith(response.messages);
-        });
-    setTimeout(function() {
+        continueWith && continueWith(data.messages);
+    });
+
+    setTimeout(function () {
         restore(continueWith);
     }, 1000);
 }
@@ -196,85 +223,4 @@ function writeAll(messageList) {
             document.getElementById("history").scrollTop = 99999999;
         }
     }
-}
-
-// "начинка" ajax
-
-function defaultErrorHandler(message) {
-    console.error(message);
-    //output(message);
-}
-
-function doGet(url, continueWith, continueWithError) {
-    ajax('GET', url, null, continueWith, continueWithError);
-}
-
-function doPost(url, data, continueWith, continueWithError) {
-    ajax('POST', url, data, continueWith, continueWithError);
-}
-
-function doPut(url, data, continueWith, continueWithError) {
-    ajax('PUT', url, data, continueWith, continueWithError);
-}
-
-function doDelete(url, data, continueWith, continueWithError) {
-    ajax('DELETE', url, data, continueWith, continueWithError);
-}
-
-function isError(text) {
-    if(text == "")
-        return false;
-    var obj;
-
-    try {
-        obj = JSON.parse(text);
-    } catch(ex) {
-        return true;
-    }
-
-    return !!obj.error;
-}
-
-function ajax(method, url, data, continueWith, continueWithError) {
-    var xhr = new XMLHttpRequest();
-
-    continueWithError = continueWithError || defaultErrorHandler;
-    xhr.open(method || 'GET', url, true);
-
-    xhr.onload = function () {
-        if (xhr.readyState !== 4)
-            return;
-
-        if(xhr.status != 200) {
-            continueWithError('Error on the server side, response ' + xhr.status);
-            return;
-        }
-
-        if(isError(xhr.responseText)) {
-            continueWithError('Error on the server side, response ' + xhr.responseText);
-            return;
-        }
-
-        continueWith(xhr.responseText);
-    };
-
-    xhr.ontimeout = function () {
-        ontinueWithError('Server timed out !');
-    };
-
-    xhr.onerror = function (e) {
-        var errMsg = 'Server connection error !\n'+
-            '\n' +
-            'Check if \n'+
-            '- server is active\n'+
-            '- server sends header "Access-Control-Allow-Origin:*"';
-
-        continueWithError(errMsg);
-    };
-
-    xhr.send(data);
-}
-
-window.onerror = function(err) {
-    //output(err.toString());
 }
