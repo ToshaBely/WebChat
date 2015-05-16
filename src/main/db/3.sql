@@ -1,0 +1,1 @@
+select * from chat.messages where user_id = 2 and date = '2015-05-02';
