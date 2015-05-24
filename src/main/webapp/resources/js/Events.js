@@ -1,6 +1,10 @@
 'use strict';
 
 var nowID;
+var appState = {
+    mainUrl : 'http://localhost:8080/WebChat'
+};
+var url = appState.mainUrl + '?first=true';
 
 function createMes(textNew, authorNew) {
     return {
@@ -17,14 +21,10 @@ function uniqueID() {
     return Math.floor(date * random).toString();
 }
 
-var appState = {
-    mainUrl : 'http://localhost:8080/WebChat',
-    token : 'TE11EN',
-    version: "0"
-};
-
 function run() {
-    restore(writeAll);
+    initDialog();
+    url = appState.mainUrl + '?first=false';
+    restore();
 
     var name = document.getElementById("btnName");
     name.addEventListener("click", function () {
@@ -65,7 +65,7 @@ function writeUIMessage(elem) {
     divItem.setAttribute("id", elem.id);
 
     var spanElem = document.createElement("span");
-    spanElem.classList.add("author")
+    spanElem.classList.add("author");
     spanElem.textContent = elem.author + ': ';
 
     var change = document.createElement("i");
@@ -104,15 +104,36 @@ function writeUIMessage(elem) {
     divItem.appendChild(btnChange);
     divItem.appendChild(text);
     divItem.setAttribute("onmouseover", "showButtons(this)");
-    divItem.setAttribute("onmouseout", "hideButtons(this)")
+    divItem.setAttribute("onmouseout", "hideButtons(this)");
 
     return divItem;
+}
+
+function deleteUIMessage(messageList) {
+    if (messageList != null) {
+        for (var i = 0; i < messageList.length; i++) {
+            var id = messageList[i].id;
+            var item = document.getElementById(id);
+            item.parentNode.removeChild(item);
+        }
+    }
+}
+
+function changeUIMessage(messageList) {
+    if (messageList != null) {
+        for (var i = 0; i < messageList.length; i++) {
+            var id = messageList[i].id;
+            var item = document.getElementById(id);
+            item.getElementsByClassName("textMessage")[0].innerHTML = messageList[i].text;
+
+        }
+    }
 }
 
 function funBtnDelete(elem) {
     var parent = elem.parentNode;
     $.ajax({
-       method: "DELETE",
+        method: "DELETE",
         url: appState.mainUrl,
         data: JSON.stringify({id: parent.id, text: "", author: "not important"})
     });
@@ -179,9 +200,7 @@ function setServerStatusGood() {
     }
 }
 
-function restore(continueWith) {
-    var url = appState.mainUrl + '?token=' + appState.token + '&version=' + appState.version;
-
+function initDialog () {
     $.get(url, function(data, textStatus, xhr) {
 
         if(xhr.status != 200) {
@@ -194,18 +213,22 @@ function restore(continueWith) {
             }
         } else {
             setServerStatusGood();
-            if (appState.version != data.version) {
-                document.getElementById('history').innerHTML = '';
-                appState.version = data.version;
-            }
-            appState.token = data.token;
+            writeAll(data.messages);
         }
-        continueWith && continueWith(data.messages);
     });
+}
 
-    setTimeout(function () {
-        restore(continueWith);
-    }, 1000);
+function restore() {
+    $.ajax({url: url, success: function(data) {
+        setServerStatusGood();
+        if (data.action == "ADD") {
+            writeAll(data.messages);
+        } else if (data.action == "DELETE") {
+            deleteUIMessage(data.messages);
+        } else if (data.action == "CHANGE") {
+            changeUIMessage(data.messages);
+        }
+    }, dataType: "json", complete: restore, timeout: 300000});
 }
 
 function writeAll(messageList) {
@@ -223,4 +246,8 @@ function writeAll(messageList) {
             document.getElementById("history").scrollTop = 99999999;
         }
     }
+}
+
+function continueWithError(strErr) {
+    console.log(strErr);
 }

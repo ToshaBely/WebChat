@@ -3,7 +3,7 @@ package Chat.Controller;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.text.DateFormat;
-import java.util.Date;
+import java.util.*;
 
 import Chat.Util.XMLHistoryUtil;
 import Chat.Model.Message;
@@ -14,14 +14,13 @@ import org.json.simple.parser.ParseException;
 
 import org.xml.sax.SAXException;
 
-import static Chat.Util.MessageUtil.TOKEN;
-import static Chat.Util.MessageUtil.VERSION;
 import static Chat.Util.MessageUtil.MESSAGES;
-import static Chat.Util.MessageUtil.getIndex;
-import static Chat.Util.MessageUtil.getToken;
 import static Chat.Util.MessageUtil.jsonToMessage;
 import static Chat.Util.MessageUtil.stringToJson;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -31,21 +30,22 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.xpath.XPathExpressionException;
 
-import java.util.List;
-import java.util.TimeZone;
 import org.apache.log4j.Logger;
 
 
-@WebServlet("/WebChat")
+@WebServlet(urlPatterns = {"/WebChat"}, asyncSupported = true)
 public class MainServlet extends HttpServlet {
+    /*
+    Связывается одновременно лишь с одним клиентом :(
+    Исправь!
+     */
 
-    private Integer versionServer;
     private static Logger logger = Logger.getLogger(MainServlet.class.getName());
+    private List <AsyncContext> contexts = new LinkedList<>();
 
     @Override
     public void init() throws ServletException {
         try {
-            versionServer = 0;
             loadHistory();
             List<Message> messageList = XMLHistoryUtil.getMessages(0);
             for (Message message : messageList) {
@@ -63,12 +63,21 @@ public class MainServlet extends HttpServlet {
     }
 
     @SuppressWarnings("unchecked")
-    private String formResponse(int index) throws SAXException, IOException, ParserConfigurationException {
+    private String initFormResponse() throws SAXException, IOException, ParserConfigurationException {
 
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put(MESSAGES, XMLHistoryUtil.getMessages(index));
-        jsonObject.put(TOKEN, getToken(XMLHistoryUtil.getStorageSize()));
-        jsonObject.put(VERSION, versionServer.toString());
+        jsonObject.put(MESSAGES, XMLHistoryUtil.getMessages(0));
+        return jsonObject.toJSONString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String formResponse(Message message, String action) throws SAXException, IOException, ParserConfigurationException {
+
+        List<Message> list = new ArrayList<>();
+        list.add(message);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put(MESSAGES, list);
+        jsonObject.put("action", action);
         return jsonObject.toJSONString();
     }
 
@@ -82,38 +91,51 @@ public class MainServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         logger.info("doGet");
-        String token = request.getParameter(TOKEN);
-        logger.info("Token: " + token);
-        Integer version = Integer.parseInt(request.getParameter(VERSION));
-        logger.info("Version: " + version);
 
-        try {
-            if (token != null && !"".equals(token) && !"".equals(version.toString())) {
-                int index = getIndex(token);
-                logger.info("Index: " + index);
-                if (version.equals(versionServer) && index == XMLHistoryUtil.getStorageSize()) {
-                    response.sendError(HttpServletResponse.SC_NOT_MODIFIED);
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, HEAD");
+
+        response.setContentType(ServletUtil.APPLICATION_JSON);
+        response.setCharacterEncoding("UTF-8");
+
+        if ("false".equals(request.getParameter("first"))) {
+            final AsyncContext asyncContext = request.startAsync(request, response);
+            asyncContext.addListener(new AsyncListener() {
+                @Override
+                public void onComplete(AsyncEvent asyncEvent) throws IOException {
+                    System.out.println("Async complete.");
                 }
-                else {
-                    response.setContentType(ServletUtil.APPLICATION_JSON);
-                    response.setCharacterEncoding("UTF-8");
-                    PrintWriter out = response.getWriter();
-                    String messages;
-                    if (versionServer.equals(version)) {
-                        messages = formResponse(index);
-                    } else {
-                        messages = formResponse(0);
-                    }
-                    out.print(messages);
-                    out.flush();
+
+                @Override
+                public void onTimeout(AsyncEvent asyncEvent) throws IOException {
+                    System.out.println("Timed out..");
+                    contexts.remove(asyncContext);
+                    asyncContext.complete();
                 }
-            } else {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "'token' and 'version' parameters needed");
+
+                @Override
+                public void onError(AsyncEvent asyncEvent) throws IOException {
+                    System.out.println("Error..");
+                }
+
+                @Override
+                public void onStartAsync(AsyncEvent asyncEvent) throws IOException {
+                    System.out.println("Start Async..");
+                }
+            });
+
+            asyncContext.setTimeout(10 * 1000);
+            contexts.add(asyncContext);
+        } else {
+            try {
+                String responseMessage = initFormResponse();
+                PrintWriter writer = response.getWriter();
+                writer.print(responseMessage);
+                writer.flush();
+            } catch (SAXException | ParserConfigurationException e) {
+                logger.error(e);
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
-        }
-        catch (SAXException | ParserConfigurationException e) {
-            logger.error(e);
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
@@ -122,6 +144,13 @@ public class MainServlet extends HttpServlet {
         logger.info("doPost");
         String data = ServletUtil.getMessageBody(request);
         logger.info(data);
+
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, HEAD");
+
+        List<AsyncContext> asyncContexts = new ArrayList<>(this.contexts);
+        this.contexts.clear();
+
         try {
             String date = getDate();
 
@@ -130,6 +159,15 @@ public class MainServlet extends HttpServlet {
             message.setDate(date);
             XMLHistoryUtil.addData(message);
             response.setStatus(HttpServletResponse.SC_OK);
+
+            String responseMessage = formResponse(message, "ADD");
+
+            for (AsyncContext asyncContext: asyncContexts) {
+                PrintWriter writer = asyncContext.getResponse().getWriter();
+                writer.println(responseMessage);
+                writer.flush();
+                asyncContext.complete();
+            }
             System.out.print(date + "  ");
             System.out.println(json.get("author") + " : " + json.get("text"));
             System.out.flush();
@@ -143,15 +181,31 @@ public class MainServlet extends HttpServlet {
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         logger.info("doPut");
-        versionServer++;
         String data = ServletUtil.getMessageBody(request);
         logger.info(data);
+
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, HEAD");
+
+        List<AsyncContext> asyncContexts = new ArrayList<>(this.contexts);
+        this.contexts.clear();
+
         try {
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
             message.setDate(getDate());
             XMLHistoryUtil.updateData(message);
             response.setStatus(HttpServletResponse.SC_OK);
+
+            String responseMessage = formResponse(message, "CHANGE");
+
+            for (AsyncContext asyncContext: asyncContexts) {
+                PrintWriter writer = asyncContext.getResponse().getWriter();
+                writer.println(responseMessage);
+                writer.flush();
+                asyncContext.complete();
+            }
+
         } catch (ParseException | ParserConfigurationException | SAXException | TransformerException | XPathExpressionException e) {
             logger.error(e);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
@@ -161,15 +215,32 @@ public class MainServlet extends HttpServlet {
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         logger.info("doDelete");
-        versionServer++;
+
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, HEAD");
+
         String data = ServletUtil.getMessageBody(request);
         logger.info(data);
+
+        List<AsyncContext> asyncContexts = new ArrayList<>(this.contexts);
+        this.contexts.clear();
+
         try {
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
             message.setDate(getDate());
             XMLHistoryUtil.deleteData(message);
             response.setStatus(HttpServletResponse.SC_OK);
+
+            String responseMessage = formResponse(message, "DELETE");
+
+            for (AsyncContext asyncContext: asyncContexts) {
+                PrintWriter writer = asyncContext.getResponse().getWriter();
+                writer.println(responseMessage);
+                writer.flush();
+                asyncContext.complete();
+            }
+
         } catch (ParseException | ParserConfigurationException | SAXException | TransformerException | XPathExpressionException e) {
             logger.error(e);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
