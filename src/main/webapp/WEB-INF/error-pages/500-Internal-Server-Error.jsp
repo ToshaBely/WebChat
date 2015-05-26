@@ -2,7 +2,7 @@
 <% response.setStatus(404); %>
 <html>
 <head>
-  <title>Internal-Server-Error</title>
+  <title>500 - Internal-Server-Error</title>
 </head>
 <body>
 <H2>500 - Internal Server Error</H2>

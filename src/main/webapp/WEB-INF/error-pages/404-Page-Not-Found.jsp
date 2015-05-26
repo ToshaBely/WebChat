@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>404 - Page Not Found</title>
+  <!--
   <style>
     body {
       background-color: #64b2e8;
@@ -12,10 +13,10 @@
       font-family: "Source Sanc Pro", Sans-serif;
     }
   </style>
+  -->
 </head>
 <body>
-<br><br>
-<center>Page Not Found</center>
+<H2>404 - Page Not Found</H2>
 <!--
 <img src="/resources/pictures/pnf.jpg">
 -->

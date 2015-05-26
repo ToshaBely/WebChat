@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.util.*;
 
+import Chat.DAO.MessageDAOImpl;
 import Chat.Util.XMLHistoryUtil;
 import Chat.Model.Message;
 import Chat.Util.ServletUtil;
@@ -35,10 +36,8 @@ import org.apache.log4j.Logger;
 
 @WebServlet(urlPatterns = {"/WebChat"}, asyncSupported = true)
 public class MainServlet extends HttpServlet {
-    /*
-    Связывается одновременно лишь с одним клиентом :(
-    Исправь!
-     */
+
+    MessageDAOImpl messageDAO = new MessageDAOImpl();
 
     private static Logger logger = Logger.getLogger(MainServlet.class.getName());
     private List <AsyncContext> contexts = new LinkedList<>();
@@ -66,7 +65,10 @@ public class MainServlet extends HttpServlet {
     private String initFormResponse() throws SAXException, IOException, ParserConfigurationException {
 
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put(MESSAGES, XMLHistoryUtil.getMessages(0));
+        //jsonObject.put(MESSAGES, XMLHistoryUtil.getMessages(0));
+        List<Message> list;
+        list = messageDAO.selectAll();
+        jsonObject.put(MESSAGES, list);
         return jsonObject.toJSONString();
     }
 
@@ -124,7 +126,7 @@ public class MainServlet extends HttpServlet {
                 }
             });
 
-            asyncContext.setTimeout(10 * 1000);
+            asyncContext.setTimeout(5 * 60 * 1000);
             contexts.add(asyncContext);
         } else {
             try {
@@ -156,8 +158,8 @@ public class MainServlet extends HttpServlet {
 
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
-            message.setDate(date);
-            XMLHistoryUtil.addData(message);
+            //XMLHistoryUtil.addData(message);
+            messageDAO.add(message);
             response.setStatus(HttpServletResponse.SC_OK);
 
             String responseMessage = formResponse(message, "ADD");
@@ -172,7 +174,7 @@ public class MainServlet extends HttpServlet {
             System.out.println(json.get("author") + " : " + json.get("text"));
             System.out.flush();
 
-        } catch (ParseException | ParserConfigurationException | SAXException | TransformerException e) {
+        } catch (ParseException | ParserConfigurationException | SAXException e) {
             logger.error(e);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
@@ -193,8 +195,8 @@ public class MainServlet extends HttpServlet {
         try {
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
-            message.setDate(getDate());
-            XMLHistoryUtil.updateData(message);
+            //XMLHistoryUtil.updateData(message);
+            messageDAO.update(message);
             response.setStatus(HttpServletResponse.SC_OK);
 
             String responseMessage = formResponse(message, "CHANGE");
@@ -206,7 +208,7 @@ public class MainServlet extends HttpServlet {
                 asyncContext.complete();
             }
 
-        } catch (ParseException | ParserConfigurationException | SAXException | TransformerException | XPathExpressionException e) {
+        } catch (ParseException | ParserConfigurationException | SAXException e) {
             logger.error(e);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
@@ -228,8 +230,8 @@ public class MainServlet extends HttpServlet {
         try {
             JSONObject json = stringToJson(data);
             Message message = jsonToMessage(json);
-            message.setDate(getDate());
-            XMLHistoryUtil.deleteData(message);
+            //XMLHistoryUtil.deleteData(message);
+            messageDAO.delete(message);
             response.setStatus(HttpServletResponse.SC_OK);
 
             String responseMessage = formResponse(message, "DELETE");
@@ -241,7 +243,7 @@ public class MainServlet extends HttpServlet {
                 asyncContext.complete();
             }
 
-        } catch (ParseException | ParserConfigurationException | SAXException | TransformerException | XPathExpressionException e) {
+        } catch (ParseException | ParserConfigurationException | SAXException e) {
             logger.error(e);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
