@@ -5,7 +5,7 @@ textarea {
 
 #toolBar {
     top: 2%;
-    position: absolute;
+    position: relative;
     width: 80%;
     left: 10%;
     height: 6%;
@@ -13,36 +13,35 @@ textarea {
 
 .serverBadStatus {
     position: relative;
-    left: 1.5%;
     color: red;
     height: 2em;
 }
 
 .serverGoodStatus {
     position: relative;
-    left: 1.5%;
     color: green;
     height: 2em;
 }
 
 #name {
-    position: absolute;
+    position: relative;
     height: 2em;
     width: 20%;
-    left: 40%;
 }
 
 #inputName {
-    position: absolute;
+    position: relative;
     width: 20%;
-    right: 13%;
+    left: 20%;
+    right: 10%;
 }
 
 #btnName {
-    position: absolute;
-    width: 10%;
+    position: relative;
+    width: 12%;
     height: 2em;
-    right: 2%;
+    left: 20%;
+    right: 10%;
 }
 
 #history {

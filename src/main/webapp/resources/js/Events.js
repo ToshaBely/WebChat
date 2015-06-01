@@ -219,7 +219,7 @@ function initDialog () {
 }
 
 function restore() {
-    $.ajax({url: url, success: function(data) {
+    $.ajax({url: url, success: function(data, textStatus) {
         setServerStatusGood();
         if (data.action == "ADD") {
             writeAll(data.messages);
@@ -228,7 +228,10 @@ function restore() {
         } else if (data.action == "CHANGE") {
             changeUIMessage(data.messages);
         }
-    }, dataType: "json", complete: restore, timeout: 300000});
+    },
+        error: function() {
+                    setServerStatusBad();
+        }, dataType: "json", complete: restore, timeout: 300000});
 }
 
 function writeAll(messageList) {
