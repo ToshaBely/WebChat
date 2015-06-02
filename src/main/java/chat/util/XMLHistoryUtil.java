@@ -1,4 +1,4 @@
-package Chat.Util;
+package chat.util;
 
 
 import java.io.File;
@@ -22,7 +22,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import Chat.Model.Message;
+import chat.model.Message;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;

@@ -1,6 +1,6 @@
-package Chat.DAO;
+package chat.dao;
 
-import Chat.Model.Message;
+import chat.model.Message;
 
 import java.util.List;
 

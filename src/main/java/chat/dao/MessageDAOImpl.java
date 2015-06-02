@@ -1,7 +1,7 @@
-package Chat.DAO;
+package chat.dao;
 
-import Chat.Model.Message;
-import Chat.db.ConnectionManager;
+import chat.model.Message;
+import chat.db.ConnectionManager;
 import org.apache.log4j.Logger;
 
 import java.sql.*;

@@ -1,23 +1,23 @@
-package Chat.Controller;
+package chat.controller;
 
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.util.*;
 
-import Chat.DAO.MessageDAOImpl;
-import Chat.Util.XMLHistoryUtil;
-import Chat.Model.Message;
-import Chat.Util.ServletUtil;
+import chat.dao.MessageDAOImpl;
+import chat.util.XMLHistoryUtil;
+import chat.model.Message;
+import chat.util.ServletUtil;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
 import org.xml.sax.SAXException;
 
-import static Chat.Util.MessageUtil.MESSAGES;
-import static Chat.Util.MessageUtil.jsonToMessage;
-import static Chat.Util.MessageUtil.stringToJson;
+import static chat.util.MessageUtil.MESSAGES;
+import static chat.util.MessageUtil.jsonToMessage;
+import static chat.util.MessageUtil.stringToJson;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;

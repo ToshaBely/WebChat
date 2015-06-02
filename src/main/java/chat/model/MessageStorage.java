@@ -1,4 +1,4 @@
-package Chat.Model;
+package chat.model;
 
 
 import java.util.ArrayList;

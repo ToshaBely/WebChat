@@ -231,7 +231,7 @@ function restore() {
     },
         error: function() {
                     setServerStatusBad();
-        }, dataType: "json", complete: restore, timeout: 300000});
+        }, dataType: "json", complete: restore, timeout: 5 * 60 * 1000});
 }
 
 function writeAll(messageList) {

@@ -1,6 +1,6 @@
-package Chat.Util;
+package chat.util;
 
-import Chat.Model.Message;
+import chat.model.Message;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;

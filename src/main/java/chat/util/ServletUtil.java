@@ -1,4 +1,4 @@
-package Chat.Util;
+package chat.util;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
