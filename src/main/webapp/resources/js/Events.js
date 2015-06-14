@@ -44,6 +44,11 @@ function run() {
             return;
         }
 
+        if (document.getElementById("inputText").value.indexOf("\n") != -1){
+            alert ("Enter message without 'Enter'!");
+            return;
+        }
+
 
         var item = createMes(document.getElementById("inputText").value, document.getElementById("name").value);
         document.getElementById("inputText").value = '';

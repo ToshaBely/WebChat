@@ -22,21 +22,27 @@ public class MessageDAOImpl implements MessageDAO {
        try {
            connection = ConnectionManager.getConnection();
            statement = connection.createStatement();
-           resultSet = statement.executeQuery("SELECT * FROM Users WHERE name = \"" + message.getAuthor() + "\"");
+           preparedStatement = connection.prepareStatement("SELECT * FROM users WHERE name = ?");
+           preparedStatement.setString(1, message.getAuthor());
+           resultSet = preparedStatement.executeQuery();
+           //resultSet = statement.executeQuery("SELECT * FROM users WHERE name = \"" + message.getAuthor() + "\"");
            int authorID;
            if (resultSet.next()) {
                authorID = resultSet.getInt("id");
            }
            else {
-               preparedStatement = connection.prepareStatement("INSERT INTO Users (name) VALUES (?)");
+               preparedStatement = connection.prepareStatement("INSERT INTO users (name) VALUES (?)");
                preparedStatement.setString(1, message.getAuthor());
                preparedStatement.executeUpdate();
 
-               resultSet = statement.executeQuery("SELECT * FROM Users WHERE name = \"" + message.getAuthor() + "\"");
+               //resultSet = statement.executeQuery("SELECT * FROM users WHERE name = \"" + message.getAuthor() + "\"");
+               preparedStatement = connection.prepareStatement("SELECT * FROM users WHERE name = ?");
+               preparedStatement.setString(1, message.getAuthor());
+               resultSet = preparedStatement.executeQuery();
                resultSet.next();
                authorID = resultSet.getInt("id");
            }
-           preparedStatement = connection.prepareStatement("INSERT INTO Messages (id, text, dateMessage, user_id) VALUES (?, ?, now(), ?)");
+           preparedStatement = connection.prepareStatement("INSERT INTO messages_store (id, text, dateMessage, user_id) VALUES (?, ?, now(), ?)");
            preparedStatement.setString(1, message.getId());
            preparedStatement.setString(2, message.getText());
            preparedStatement.setInt(3, authorID);
@@ -71,7 +77,7 @@ public class MessageDAOImpl implements MessageDAO {
         PreparedStatement preparedStatement = null;
         try {
             connection = ConnectionManager.getConnection();
-            preparedStatement = connection.prepareStatement("Update Messages SET text = ? WHERE id = ?");
+            preparedStatement = connection.prepareStatement("Update messages_store SET text = ? WHERE id = ?");
             preparedStatement.setString(1, message.getText());
             preparedStatement.setString(2, message.getId());
             preparedStatement.executeUpdate();
@@ -104,7 +110,7 @@ public class MessageDAOImpl implements MessageDAO {
             connection = ConnectionManager.getConnection();
             // полностью удалить:
             //preparedStatement = connection.prepareStatement("DELETE  from messages WHERE id = ?");
-            preparedStatement = connection.prepareStatement("Update Messages SET text = ? WHERE id = ?");
+            preparedStatement = connection.prepareStatement("Update messages_store SET text = ? WHERE id = ?");
             preparedStatement.setString(1, message.getText());
             preparedStatement.setString(2, message.getId());
             preparedStatement.executeUpdate();
@@ -145,8 +151,8 @@ public class MessageDAOImpl implements MessageDAO {
         try {
             connection = ConnectionManager.getConnection();
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("SELECT Users.name, Messages.id, text, dateMessage FROM Messages" +
-                    " JOIN Users ON Messages.user_id = Users.id ORDER BY dateMessage");
+            resultSet = statement.executeQuery("SELECT users.name, messages_store.id, text, dateMessage FROM messages_store" +
+                    " JOIN users ON messages_store.user_id = users.id ORDER BY dateMessage");
             while (resultSet.next()) {
                 String id = resultSet.getString("id");
                 String text = resultSet.getString("text");
